@@ -2,5 +2,5 @@ fastapi
 uvicorn
 pandas
 pandas_ta
-akshare
+adata
 jinja2

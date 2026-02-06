@@ -26,5 +26,5 @@ uvicorn app.main:app --reload
 ## 设计要点
 
 - 指标插件化注册，前端通过配置自动渲染勾选框。
-- 使用 AkShare 获取 A 股复权数据，失败时自动回退到模拟数据。
+
 - 报告模板采用 Jinja2 + Lightweight Charts，内嵌 JSON 数据离线渲染。

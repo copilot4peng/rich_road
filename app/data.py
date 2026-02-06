@@ -6,9 +6,11 @@ from typing import Optional
 import pandas as pd
 
 try:
-    import akshare as ak  # type: ignore
+
+    import adata  # type: ignore
 except Exception:  # noqa: BLE001
-    ak = None
+    adata = None
+
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +44,9 @@ def _save_cache(code: str, period: str, df: pd.DataFrame) -> None:
 
 
 def _mock_data() -> pd.DataFrame:
-    logger.warning("使用模拟数据 (未安装 AkShare 或取数失败)")
+
+    logger.warning("使用模拟数据 (未安装 adata 或取数失败)")
+
     dates = pd.date_range(end=dt.date.today(), periods=200, freq="B")
     close = pd.Series(100 + pd.Series(range(len(dates))).rolling(5).mean().fillna(0))
     df = pd.DataFrame(
@@ -84,22 +88,74 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _resolve_callable(path: str):
+    current = adata
+    for chunk in path.split("."):
+        if current is None:
+            return None
+        current = getattr(current, chunk, None)
+    return current
+
+
+def _call_with_available_args(func, params: dict):
+    try:
+        import inspect
+
+        signature = inspect.signature(func)
+        accepted = {
+            name: value
+            for name, value in params.items()
+            if name in signature.parameters and value is not None
+        }
+        return func(**accepted)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("调用 adata 接口失败: %s", exc)
+        return None
+
+
+def _fetch_from_adata(code: str, period: str, start: Optional[str], end: Optional[str]) -> Optional[pd.DataFrame]:
+    if adata is None:
+        logger.warning("adata 未安装，使用模拟数据")
+        return None
+    candidates = [
+        "stock.market.get_market",
+        "stock.hist.get_hist",
+        "stock.hist",
+        "stock.daily",
+    ]
+    params = {
+        "code": code,
+        "symbol": code,
+        "period": period,
+        "k_type": period,
+        "start_date": start,
+        "end_date": end,
+        "start": start,
+        "end": end,
+    }
+    for path in candidates:
+        func = _resolve_callable(path)
+        if not callable(func):
+            continue
+        logger.info("请求 adata 数据: %s (%s)", code, path)
+        df = _call_with_available_args(func, params)
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            return df
+    logger.warning("adata 未返回有效数据，回退到模拟数据")
+    return None
+
+
+
 def fetch_stock_data(code: str, period: str = "daily", start: Optional[str] = None, end: Optional[str] = None) -> pd.DataFrame:
     cached = _load_cache(code, period)
     if cached is not None:
         df = cached
     else:
-        if ak is None:
+
+        df = _fetch_from_adata(code=code, period=period, start=start, end=end)
+        if df is None:
             df = _mock_data()
-        else:
-            logger.info("请求 AkShare 数据: %s", code)
-            df = ak.stock_zh_a_hist(
-                symbol=code,
-                period="daily" if period == "daily" else period,
-                start_date=start,
-                end_date=end,
-                adjust="qfq",
-            )
+
         _save_cache(code, period, df)
 
     df = _normalize_columns(df)
