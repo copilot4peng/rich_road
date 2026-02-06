@@ -14,6 +14,7 @@ uvicorn app.main:app --reload
 
 访问 `http://127.0.0.1:8000` 查看前端演示页面，`http://127.0.0.1:8000/docs` 查看交互式 API 文档。
 
+
 ## 主要接口
 
 - `GET /api/indicators/config` 指标配置列表
@@ -25,5 +26,5 @@ uvicorn app.main:app --reload
 ## 设计要点
 
 - 指标插件化注册，前端通过配置自动渲染勾选框。
-- 使用 adata 获取 A 股行情数据，失败时自动回退到模拟数据。
+
 - 报告模板采用 Jinja2 + Lightweight Charts，内嵌 JSON 数据离线渲染。
