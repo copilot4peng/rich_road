@@ -2,9 +2,12 @@ import datetime as dt
 import logging
 from typing import List, Optional
 
-from fastapi import FastAPI, Query
+
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.templating import Jinja2Templates
+
 
 from app.data import fetch_stock_data
 from app.indicators import IndicatorResult, build_registry
@@ -24,6 +27,9 @@ app.add_middleware(
 )
 
 registry = build_registry()
+
+templates = Jinja2Templates(directory="templates")
+
 
 
 def _build_candles(df) -> List[dict]:
@@ -64,9 +70,15 @@ def health() -> dict:
 
 
 
-@app.get("/")
-def index() -> dict:
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/api")
+def api_root() -> dict:
     return {"message": "智能股票量化分析平台 API 已启动"}
+
 
 @app.get("/api/indicators/config")
 def indicator_config() -> dict:
