@@ -107,6 +107,7 @@ def fetch_stock_data(code: str, period: str = "daily", start: Optional[str] = No
         logger.warning("未找到日期列，回退到模拟数据")
         df = _mock_data()
         df = _normalize_columns(df)
+
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date")
     df["timestamp"] = df["date"].dt.strftime("%Y-%m-%d")
