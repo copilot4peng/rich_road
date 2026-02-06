@@ -63,6 +63,11 @@ def health() -> dict:
     return {"status": "ok"}
 
 
+
+@app.get("/")
+def index() -> dict:
+    return {"message": "智能股票量化分析平台 API 已启动"}
+
 @app.get("/api/indicators/config")
 def indicator_config() -> dict:
     return {"indicators": registry.get_all_configs()}
