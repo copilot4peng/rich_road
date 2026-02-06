@@ -6,9 +6,11 @@ from typing import Optional
 import pandas as pd
 
 try:
+
     import adata  # type: ignore
 except Exception:  # noqa: BLE001
     adata = None
+
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +44,9 @@ def _save_cache(code: str, period: str, df: pd.DataFrame) -> None:
 
 
 def _mock_data() -> pd.DataFrame:
+
     logger.warning("使用模拟数据 (未安装 adata 或取数失败)")
+
     dates = pd.date_range(end=dt.date.today(), periods=200, freq="B")
     close = pd.Series(100 + pd.Series(range(len(dates))).rolling(5).mean().fillna(0))
     df = pd.DataFrame(
@@ -141,14 +145,17 @@ def _fetch_from_adata(code: str, period: str, start: Optional[str], end: Optiona
     return None
 
 
+
 def fetch_stock_data(code: str, period: str = "daily", start: Optional[str] = None, end: Optional[str] = None) -> pd.DataFrame:
     cached = _load_cache(code, period)
     if cached is not None:
         df = cached
     else:
+
         df = _fetch_from_adata(code=code, period=period, start=start, end=end)
         if df is None:
             df = _mock_data()
+
         _save_cache(code, period, df)
 
     df = _normalize_columns(df)
@@ -156,6 +163,7 @@ def fetch_stock_data(code: str, period: str = "daily", start: Optional[str] = No
         logger.warning("未找到日期列，回退到模拟数据")
         df = _mock_data()
         df = _normalize_columns(df)
+
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date")
     df["timestamp"] = df["date"].dt.strftime("%Y-%m-%d")
