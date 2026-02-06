@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pandas
+pandas_ta
+adata
+jinja2

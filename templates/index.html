@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>智能股票量化分析平台</title>
+  <style>
+    body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; margin: 24px; background: #f7f8fa; }
+    header { margin-bottom: 20px; }
+    h1 { margin: 0 0 8px; }
+    .panel { background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    label { font-weight: 600; }
+    input, select, button { padding: 8px 10px; border-radius: 6px; border: 1px solid #dcdcdc; }
+    button { background: #1677ff; color: #fff; border: none; cursor: pointer; }
+    button.secondary { background: #f0f0f0; color: #333; }
+    .indicator-list { display: flex; flex-wrap: wrap; gap: 12px; }
+    .indicator-item { background: #f5f5f5; padding: 6px 10px; border-radius: 16px; }
+    pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 8px; overflow: auto; max-height: 320px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>智能股票量化分析平台</h1>
+    <p>前端演示页面：可查询股票数据、指标配置与报告导出。</p>
+  </header>
+
+  <div class="panel">
+    <div class="row">
+      <label for="code">股票代码</label>
+      <input id="code" value="000001" />
+      <label for="period">周期</label>
+      <select id="period">
+        <option value="daily">日线</option>
+        <option value="weekly">周线</option>
+        <option value="monthly">月线</option>
+      </select>
+      <button id="load">加载数据</button>
+      <button id="signals" class="secondary">扫描信号</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>可用指标</h3>
+    <div id="indicator-list" class="indicator-list"></div>
+  </div>
+
+  <div class="panel">
+    <h3>API 响应</h3>
+    <pre id="output">点击“加载数据”后显示接口响应。</pre>
+  </div>
+
+  <div class="panel">
+    <h3>报告导出</h3>
+    <div class="row">
+      <button id="md">导出 Markdown</button>
+      <button id="html" class="secondary">导出 HTML</button>
+    </div>
+  </div>
+
+  <script>
+    const indicatorList = document.getElementById('indicator-list');
+    const output = document.getElementById('output');
+
+    async function fetchIndicators() {
+      const res = await fetch('/api/indicators/config');
+      const data = await res.json();
+      indicatorList.innerHTML = '';
+      data.indicators.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'indicator-item';
+        div.textContent = `${item.name} (${item.type})`;
+        indicatorList.appendChild(div);
+      });
+    }
+
+    async function loadData() {
+      const code = document.getElementById('code').value.trim();
+      const period = document.getElementById('period').value;
+      const res = await fetch(`/api/data?code=${code}&period=${period}&indicators=MA,MACD,RSI`);
+      const data = await res.json();
+      output.textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function loadSignals() {
+      const code = document.getElementById('code').value.trim();
+      const period = document.getElementById('period').value;
+      const res = await fetch(`/api/signals?code=${code}&period=${period}`);
+      const data = await res.json();
+      output.textContent = JSON.stringify(data, null, 2);
+    }
+
+    document.getElementById('load').addEventListener('click', loadData);
+    document.getElementById('signals').addEventListener('click', loadSignals);
+
+    document.getElementById('md').addEventListener('click', () => {
+      const code = document.getElementById('code').value.trim();
+      const period = document.getElementById('period').value;
+      window.open(`/api/report/markdown?code=${code}&period=${period}`, '_blank');
+    });
+
+    document.getElementById('html').addEventListener('click', () => {
+      const code = document.getElementById('code').value.trim();
+      const period = document.getElementById('period').value;
+      window.open(`/api/report/html?code=${code}&period=${period}`, '_blank');
+    });
+
+    fetchIndicators();
+  </script>
+</body>
+</html>
