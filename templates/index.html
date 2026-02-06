@@ -15,7 +15,9 @@
     button { background: #1677ff; color: #fff; border: none; cursor: pointer; }
     button.secondary { background: #f0f0f0; color: #333; }
     .indicator-list { display: flex; flex-wrap: wrap; gap: 12px; }
-    .indicator-item { background: #f5f5f5; padding: 6px 10px; border-radius: 16px; }
+    .indicator-item { background: #f5f5f5; padding: 6px 10px; border-radius: 16px; display: flex; align-items: center; gap: 6px; }
+    .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
     pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 8px; overflow: auto; max-height: 320px; }
   </style>
 </head>
@@ -62,22 +64,53 @@
     const indicatorList = document.getElementById('indicator-list');
     const output = document.getElementById('output');
 
+
+    const indicatorColors = ['#e54d42', '#f0ad4e', '#ffd700', '#2ecc71', '#1abc9c', '#3498db', '#5b6ef5', '#9b59b6', '#ff6b81'];
+    const indicatorState = new Map();
+
+
     async function fetchIndicators() {
       const res = await fetch('/api/indicators/config');
       const data = await res.json();
       indicatorList.innerHTML = '';
-      data.indicators.forEach(item => {
+
+      data.indicators.forEach((item, index) => {
+        const color = indicatorColors[index % indicatorColors.length];
+        indicatorState.set(item.name, { color, checked: true });
         const div = document.createElement('div');
         div.className = 'indicator-item';
-        div.textContent = `${item.name} (${item.type})`;
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = true;
+        checkbox.addEventListener('change', () => {
+          indicatorState.set(item.name, { color, checked: checkbox.checked });
+        });
+        const dot = document.createElement('span');
+        dot.className = 'color-dot';
+        dot.style.background = color;
+        const label = document.createElement('span');
+        label.textContent = `${item.name} (${item.type})`;
+        div.appendChild(checkbox);
+        div.appendChild(dot);
+        div.appendChild(label);
+
         indicatorList.appendChild(div);
       });
+    }
+
+
+    function getSelectedIndicators() {
+      return Array.from(indicatorState.entries())
+        .filter(([, value]) => value.checked)
+        .map(([name]) => name);
     }
 
     async function loadData() {
       const code = document.getElementById('code').value.trim();
       const period = document.getElementById('period').value;
-      const res = await fetch(`/api/data?code=${code}&period=${period}&indicators=MA,MACD,RSI`);
+      const selected = getSelectedIndicators();
+      const indicators = selected.join(',');
+      const res = await fetch(`/api/data?code=${code}&period=${period}&indicators=${encodeURIComponent(indicators)}`);
       const data = await res.json();
       output.textContent = JSON.stringify(data, null, 2);
     }
@@ -102,7 +135,7 @@
     document.getElementById('html').addEventListener('click', () => {
       const code = document.getElementById('code').value.trim();
       const period = document.getElementById('period').value;
-      window.open(`/api/report/html?code=${code}&period=${period}`, '_blank');
+      window.location.href = `/api/report/html?code=${code}&period=${period}`;
     });
 
     fetchIndicators();
