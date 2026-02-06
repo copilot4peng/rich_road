@@ -2,10 +2,12 @@ import datetime as dt
 import logging
 from typing import List, Optional
 
+
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
+
 
 from app.data import fetch_stock_data
 from app.indicators import IndicatorResult, build_registry
@@ -25,7 +27,9 @@ app.add_middleware(
 )
 
 registry = build_registry()
+
 templates = Jinja2Templates(directory="templates")
+
 
 
 def _build_candles(df) -> List[dict]:
@@ -63,6 +67,7 @@ def _extract_series(indicators: List[IndicatorResult], name: str) -> Optional[In
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok"}
+
 
 
 @app.get("/", response_class=HTMLResponse)

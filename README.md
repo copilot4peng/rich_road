@@ -14,6 +14,7 @@ uvicorn app.main:app --reload
 
 访问 `http://127.0.0.1:8000` 查看前端演示页面，`http://127.0.0.1:8000/docs` 查看交互式 API 文档。
 
+
 ## 主要接口
 
 - `GET /api/indicators/config` 指标配置列表
