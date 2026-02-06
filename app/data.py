@@ -58,6 +58,32 @@ def _mock_data() -> pd.DataFrame:
     return df
 
 
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    column_map = {
+        "日期": "date",
+        "时间": "date",
+        "date": "date",
+        "Date": "date",
+        "开盘": "open",
+        "open": "open",
+        "Open": "open",
+        "收盘": "close",
+        "close": "close",
+        "Close": "close",
+        "最高": "high",
+        "high": "high",
+        "High": "high",
+        "最低": "low",
+        "low": "low",
+        "Low": "low",
+        "成交量": "volume",
+        "volume": "volume",
+        "Volume": "volume",
+    }
+    df = df.rename(columns={col: column_map.get(col, col) for col in df.columns})
+    return df
+
+
 def fetch_stock_data(code: str, period: str = "daily", start: Optional[str] = None, end: Optional[str] = None) -> pd.DataFrame:
     cached = _load_cache(code, period)
     if cached is not None:
@@ -74,17 +100,14 @@ def fetch_stock_data(code: str, period: str = "daily", start: Optional[str] = No
                 end_date=end,
                 adjust="qfq",
             )
-            df = df.rename(
-                columns={
-                    "日期": "date",
-                    "开盘": "open",
-                    "收盘": "close",
-                    "最高": "high",
-                    "最低": "low",
-                    "成交量": "volume",
-                }
-            )
         _save_cache(code, period, df)
+
+    df = _normalize_columns(df)
+    if "date" not in df.columns:
+        logger.warning("未找到日期列，回退到模拟数据")
+        df = _mock_data()
+        df = _normalize_columns(df)
+
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date")
     df["timestamp"] = df["date"].dt.strftime("%Y-%m-%d")
